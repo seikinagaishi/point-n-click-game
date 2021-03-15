@@ -19,6 +19,8 @@ require('./models/Equipment')
 require('./models/Inventory')
 require('./models/Mob')
 require('./models/CraftableItem')
+require('./models/Log')
+require('./models/Item')
 
 const UserM         = mongoose.model('tbuser')
 const CurrentFight  = mongoose.model('currentFight')
@@ -26,6 +28,8 @@ const Equipment     = mongoose.model('equipment')
 const Inventory     = mongoose.model('inventory')
 const Mob           = mongoose.model('mob')
 const CraftableItem = mongoose.model('craftableItem')
+const Log           = mongoose.model('log')
+const Item          = mongoose.model('item')
 
 //SETUP
 app.use( express.static(path.join(__dirname, 'public')) )
@@ -143,6 +147,15 @@ app.post('/registro', (req, res) => {
                             console.log('error: ' + err)
                         })
 
+                        new Log({
+                            user: userCreated._id
+                        }).save().then(() => {
+                            console.log('Kill log created...')
+                        })
+                        .catch((err) => {
+                            console.log('error: ' + err)
+                        })
+
                     })
 
                 })
@@ -157,7 +170,53 @@ app.post('/registro', (req, res) => {
 })
 
 app.get('/game', isLogged, (req, res) => {
-    res.render('game')
+    var userInventory
+    var userPickaxe
+    var userSword
+    var userAxe
+    var userCurrentFight
+    var userLog
+    var mobEncounter
+
+    Inventory.findOne({user: res.locals.userSession._id}).lean().then((inventory) => {
+        userInventory = inventory
+    })
+
+    Equipment.findOne({user: res.locals.userSession._id}).populate('pickaxe').lean().then((equip) => {
+        userPickaxe = equip
+    })
+
+    Equipment.findOne({user: res.locals.userSession._id}).populate('sword').lean().then((equip) => {
+        userSword = equip
+    })
+
+    Equipment.findOne({user: res.locals.userSession._id}).populate('axe').lean().then((equip) => {
+        userAxe = equip
+    })
+
+    Log.findOne({user: res.locals.userSession._id}).lean().then((log) => {
+        userLog = log
+    })
+
+    CurrentFight.findOne({user: res.locals.userSession._id}).lean().then((currentFight) => {
+        userCurrentFight = currentFight
+
+        Mob.findOne({_id: currentFight.mob}).lean().then((mob) => {
+            mobEncounter = mob
+        })
+        
+        .then(() => {
+            res.render('game', {
+                inventory:      userInventory,
+                equip1:         userPickaxe,
+                equip2:         userSword,
+                equip3:         userAxe,
+                log:            userLog,
+                currentFight:   userCurrentFight,
+                mob:            mobEncounter
+            })
+        })
+    })
 })
 
 app.get('/logout', (req, res) => {

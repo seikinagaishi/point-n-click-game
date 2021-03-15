@@ -1,5 +1,4 @@
 const section = document.querySelector('section')
-
 // Shop
 const shopBtn = document.querySelector('#shop')
 shopBtn.addEventListener('click', shop);
