@@ -14,8 +14,18 @@ const {isLogged} = require('./helpers/isLogged')
 
 // Models
 require('./models/User')
-const UserM = mongoose.model('tbuser')
+require('./models/CurrentFight')
+require('./models/Equipment')
+require('./models/Inventory')
+require('./models/Mob')
+require('./models/CraftableItem')
 
+const UserM         = mongoose.model('tbuser')
+const CurrentFight  = mongoose.model('currentFight')
+const Equipment     = mongoose.model('equipment')
+const Inventory     = mongoose.model('inventory')
+const Mob           = mongoose.model('mob')
+const CraftableItem = mongoose.model('craftableItem')
 
 //SETUP
 app.use( express.static(path.join(__dirname, 'public')) )
@@ -75,7 +85,6 @@ app.get('/registro', (req, res) => {
 })
 
 app.post('/registro', (req, res) => {
-    console.log(req.body)
     if(req.body.username == '' && req.body.password == '') {
         res.redirect('/registro')
     } else {
@@ -94,7 +103,48 @@ app.post('/registro', (req, res) => {
                 console.log('working')
                 newUser.save()
                 .then(() => {
-                    console.log('User created')
+                    console.log('User created...')
+
+                    //User related collections-tables
+                    UserM.findOne({name: req.body.username}).then((userCreated) => {
+                        
+                        //CurrentFight
+                        Mob.findOne({name: 'Skeleton'}).then((skeleton) => {
+                            new CurrentFight({
+                                mob: skeleton._id,
+                                user: userCreated._id,
+                                hp: skeleton.hp
+                            }).save().then(() => {
+                                console.log('First mob encounter created...')
+                            })
+                            .catch((err) => {
+                                console.log('error: ' + err)
+                            })
+                        })
+
+                        CraftableItem.findOne({name: 'Stick'}).then((stick) => {
+                            new Equipment({
+                                user: userCreated._id,
+                                sword: stick._id
+                            }).save().then(() => {
+                                console.log('First weapon received...')
+                            })
+                            .catch((err) => {
+                                console.log('error: ' + err)
+                            })
+                        })
+
+                        new Inventory({
+                            user: userCreated._id
+                        }).save().then(() => {
+                            console.log('Inventory created...')
+                        })
+                        .catch((err) => {
+                            console.log('error: ' + err)
+                        })
+
+                    })
+
                 })
                 .catch((err) => {
                     console.log('Error: ' + err)
