@@ -21,6 +21,8 @@ require('./models/Mob')
 require('./models/CraftableItem')
 require('./models/Log')
 require('./models/Item')
+require('./models/Shop')
+require('./models/Friendship')
 
 const UserM         = mongoose.model('tbuser')
 const CurrentFight  = mongoose.model('currentFight')
@@ -30,12 +32,14 @@ const Mob           = mongoose.model('mob')
 const CraftableItem = mongoose.model('craftableItem')
 const Log           = mongoose.model('log')
 const Item          = mongoose.model('item')
+const Shop          = mongoose.model('shop')
+const Friendship    = mongoose.model('friendship')
 
 //SETUP
 app.use( express.static(path.join(__dirname, 'public')) )
 
 app.engine('handlebars', handlebars({defaultLayout: 'layout.handlebars'}))
-app.set('view engine', 'handlebars')
+app.set('view engine', 'handlebars') 
 
 app.use(express.urlencoded())
 app.use(express.json())
@@ -177,8 +181,11 @@ app.get('/game', isLogged, (req, res) => {
     var userCurrentFight
     var userLog
     var mobEncounter
+    var shop
+    var friends
+    var users
 
-    Inventory.findOne({user: res.locals.userSession._id}).lean().then((inventory) => {
+    Inventory.findOne({user: res.locals.userSession._id}).then((inventory) => {
         userInventory = inventory
     })
 
@@ -198,6 +205,18 @@ app.get('/game', isLogged, (req, res) => {
         userLog = log
     })
 
+    Shop.find().lean().then((shopItem) => {
+        shop = JSON.stringify(shopItem)
+    })
+
+    Friendship.find({userA: res.locals.userSession._id}).lean().then((friendlist) => {
+        friends = JSON.stringify(friendlist)
+    })
+
+    UserM.find().select('name -_id').lean().then((user) => {
+        users = JSON.stringify(user)
+    })
+
     CurrentFight.findOne({user: res.locals.userSession._id}).lean().then((currentFight) => {
         userCurrentFight = currentFight
 
@@ -212,6 +231,9 @@ app.get('/game', isLogged, (req, res) => {
                 equip2:         userSword,
                 equip3:         userAxe,
                 log:            userLog,
+                shopItem:       shop,
+                friendlist:     friends,
+                users:          users,
                 currentFight:   userCurrentFight,
                 mob:            mobEncounter
             })
@@ -222,6 +244,19 @@ app.get('/game', isLogged, (req, res) => {
 app.get('/logout', (req, res) => {
     req.logout()
     res.redirect('/')
+})
+
+app.post('/add', (req, res) => {
+    res.send(
+        [
+            {
+                "name": "nome"
+            },
+            {
+                "name": "pasta"
+            }
+        ]
+    )
 })
 
 //SERVER ON

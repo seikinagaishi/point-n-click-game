@@ -224,7 +224,8 @@ h1 {
 
 .friendlist {
     max-height: 225px;
-    overflow: hidden;
+    overflow: scroll;
+    position: relative;
 }
 
 .friend {
@@ -390,4 +391,11 @@ cite {
     justify-content: center;
     flex-direction: column;
     text-align: center;
+}
+
+/* SCROLLBAR */
+
+::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }

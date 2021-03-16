@@ -95,10 +95,12 @@
 
 
 
-{{!-- Script added here to catch handlebars variables --}}
+
 {{!-- 
-    There's a lot of codes that could be reduced into a function but since I'm experimenting things here 
-    I won't do it
+    Script added here to catch handlebars variables
+    
+    There's a lot of codes that could be reduced into a function 
+    but since I'm experimenting things here I won't do it
 --}}
 <script>
     const section = document.querySelector('section')
@@ -124,28 +126,41 @@
         let slots = document.createElement('div')
         slots.setAttribute('class', 'slots')
 
-        for(let i = 0; i < 2; i++) {
-            let itemSlot = document.createElement('div')
-            itemSlot.setAttribute('class', 'tool')
-            slots.appendChild(itemSlot)
+        var shopItem = '{{{shopItem}}}'
+        shopItem = JSON.parse(shopItem)
 
-            let itemImg = document.createElement('img')
-            itemImg.setAttribute('src', 'img/weapon1.png')
+        for(item of shopItem) {
+            if(item.type == 1) {
+                let itemSlot = document.createElement('div')
+                itemSlot.setAttribute('class', 'tool')
+                slots.appendChild(itemSlot)
 
-            itemSlot.appendChild(itemImg)
+                let itemImg = document.createElement('img')
+                itemImg.setAttribute('src', item.picture + '.png')
+                itemImg.setAttribute('title', item.name + ' | ' + item.description + ' | Price: ' + item.price + 'c')
+                itemImg.setAttribute('id', item._id)
+
+                itemSlot.appendChild(itemImg)
+            }
         }
 
         let sellSlots = document.createElement('div')
         sellSlots.setAttribute('class', 'slots')
 
-        let itemSlot = document.createElement('div')
-        itemSlot.setAttribute('class', 'tool')
-        sellSlots.appendChild(itemSlot)
+        for(item of shopItem) {
+            if(item.type == 2) {
+                let itemSlot = document.createElement('div')
+                itemSlot.setAttribute('class', 'tool')
+                sellSlots.appendChild(itemSlot)
 
-        let itemImg = document.createElement('img')
-            itemImg.setAttribute('src', 'img/weapon1.png')
+                let itemImg = document.createElement('img')
+                itemImg.setAttribute('src', item.picture + '.png')
+                itemImg.setAttribute('title', item.name + ' | ' + item.description + ' | Price: ' + item.price + 'c')
+                itemImg.setAttribute('id', item._id)
 
-            itemSlot.appendChild(itemImg)
+                itemSlot.appendChild(itemImg)
+            }
+        }
 
         // exit
         let exitBtn = createExitBtn()
@@ -188,15 +203,27 @@
         friendAdd.innerText = '✉'
         slots.appendChild(friendAdd)
 
+        friendAdd.addEventListener('click', () => {
+            var users = '{{{users}}}'
+            users = JSON.parse(users)
 
-        for(let i = 0; i < 8; i++) {
+            var teste = fetch('/add', {method: 'POST'}).then(res => res.json())
+            .then((res) => {
+                console.log(res[0])
+            })
+        })
+
+        var friendship = '{{{friendlist}}}'
+        friendship = JSON.parse(friendship)
+
+        for(respectiveFriend of friendship) {
             let friend = document.createElement('li')
             friend.setAttribute('class', 'friend')
-            friend.innerText = 'asd'
+            friend.innerText = respectiveFriend.name
 
             let deleteFriend = document.createElement('span')
             deleteFriend.setAttribute('class', 'deleteBtn')
-            deleteFriend.setAttribute('id', 'deleteX')
+            deleteFriend.setAttribute('id', respectiveFriend._id)
             deleteFriend.innerText = 'X'
 
             slots.appendChild(friend)
