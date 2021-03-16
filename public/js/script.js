@@ -1,3 +1,18 @@
+// var teste = fetch('/api/teste', {
+//     method: 'POST',
+//     headers: {
+//         'Accept': 'application/json',
+//         'Content-Type': 'application/json'
+//     },
+//     body: JSON.stringify({
+//         teste: "teste"
+//     })
+// }).then((res) => res.json())
+// .then((res) => {
+//     console.log(res)
+// })
+
+
 const section = document.querySelector('section')
 // Shop
 const shopBtn = document.querySelector('#shop')
@@ -9,7 +24,7 @@ function shop() {
     // Criar tab
     let tab = document.createElement('div')
     tab.setAttribute('id', 'tab')
-    
+
     // h1s
     let buyTitle = document.createElement('h1')
     buyTitle.innerText = 'BUY'
@@ -21,28 +36,41 @@ function shop() {
     let slots = document.createElement('div')
     slots.setAttribute('class', 'slots')
 
-    for(let i = 0; i < 2; i++) {
-        let itemSlot = document.createElement('div')
-        itemSlot.setAttribute('class', 'tool')
-        slots.appendChild(itemSlot)
-
-        let itemImg = document.createElement('img')
-        itemImg.setAttribute('src', 'img/weapon1.png')
-
-        itemSlot.appendChild(itemImg)
-    }
-
     let sellSlots = document.createElement('div')
     sellSlots.setAttribute('class', 'slots')
 
-    let itemSlot = document.createElement('div')
-    itemSlot.setAttribute('class', 'tool')
-    sellSlots.appendChild(itemSlot)
+    fetch('/api/shop').then((res) => res.json())
+    .then((items) => {
+        for(item of items) {
+            if(item.type == 1) {
+                let itemSlot = document.createElement('div')
+                itemSlot.setAttribute('class', 'tool')
+                slots.appendChild(itemSlot)
 
-    let itemImg = document.createElement('img')
-        itemImg.setAttribute('src', 'img/weapon1.png')
+                let itemImg = document.createElement('img')
+                itemImg.setAttribute('src', item.picture + '.png')
+                itemImg.setAttribute('id', item._id)
+                itemImg.setAttribute('title', item.name + ' | ' + item.description + ' | Price: ' + item.price + 'c')
 
-        itemSlot.appendChild(itemImg)
+                itemSlot.appendChild(itemImg)
+            }
+        }
+
+        for(item of items) {
+            if(item.type == 2) {
+                let itemSlot = document.createElement('div')
+                itemSlot.setAttribute('class', 'tool')
+                sellSlots.appendChild(itemSlot)
+    
+                let itemImg = document.createElement('img')
+                itemImg.setAttribute('src', item.picture + '.png')
+                itemImg.setAttribute('id', item._id)
+                itemImg.setAttribute('title', item.name + ' | ' + item.description + ' | Price: ' + item.price + 'c')
+    
+                itemSlot.appendChild(itemImg)
+            }
+        }
+    })
 
     // exit
     let exitBtn = createExitBtn()
@@ -85,20 +113,35 @@ function friendlist() {
     friendAdd.innerText = '✉'
     slots.appendChild(friendAdd)
 
+    friendAdd.addEventListener('click', () => {
+        fetch('/api/friendship/add', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: friendSearch.value
+            })
+        })
+    })
 
-    for(let i = 0; i < 8; i++) {
-        let friend = document.createElement('li')
-        friend.setAttribute('class', 'friend')
-        friend.innerText = 'asd'
+    fetch('/api/friendship').then((res) => res.json())
+    .then((userFriend) => {
+        for(user of userFriend) {
+            let friend = document.createElement('li')
+            friend.setAttribute('class', 'friend')
+            friend.innerText = user.userB.name
 
-        let deleteFriend = document.createElement('span')
-        deleteFriend.setAttribute('class', 'deleteBtn')
-        deleteFriend.setAttribute('id', 'deleteX')
-        deleteFriend.innerText = 'X'
+            let deleteFriend = document.createElement('span')
+            deleteFriend.setAttribute('class', 'deleteBtn')
+            deleteFriend.setAttribute('id', user.userB._id)
+            deleteFriend.innerText = 'X'
 
-        slots.appendChild(friend)
-        slots.appendChild(deleteFriend)
-    }
+            slots.appendChild(friend)
+            slots.appendChild(deleteFriend)
+        }
+    })
 
     // exit
     let exitBtn = createExitBtn()
@@ -128,16 +171,21 @@ function skills() {
     let slots = document.createElement('div')
     slots.setAttribute('class', 'slots')
 
-    for(let i = 0; i < 2; i++) {
-        let itemSlot = document.createElement('div')
-        itemSlot.setAttribute('class', 'tool')
-        slots.appendChild(itemSlot)
+    fetch('/api/skill').then((res) => res.json())
+    .then((unlockedSkills) => {
+        for(unlocked of unlockedSkills) {
+            let itemSlot = document.createElement('div')
+            itemSlot.setAttribute('class', 'tool')
+            slots.appendChild(itemSlot)
 
-        let itemImg = document.createElement('img')
-        itemImg.setAttribute('src', 'img/weapon1.png')
+            let itemImg = document.createElement('img')
+            itemImg.setAttribute('src', unlocked.skill.picture + '.png')
+            itemImg.setAttribute('id', unlocked.skill._id)
+            itemImg.setAttribute('title', unlocked.skill.name + ' | ' + unlocked.skill.description + ' | Cooldown: ' + unlocked.skill.cooldown + 's')
 
-        itemSlot.appendChild(itemImg)
-    }
+            itemSlot.appendChild(itemImg)
+        }
+    })
 
     // exit
     let exitBtn = createExitBtn()
@@ -166,6 +214,11 @@ function craft() {
 
     let slots = document.createElement('div')
     slots.setAttribute('class', 'slots')
+
+    fetch('/api/craft').then((res) => res.json())
+    .then((craftItems) => {
+        console.log(craftItems)
+    })
 
     for(let i = 0; i < 3; i++) {
         let itemSlot = document.createElement('div')

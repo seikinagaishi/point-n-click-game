@@ -9,6 +9,8 @@ const mongoose   = require('mongoose')
 const path       = require('path')
 const bcrypt     = require('bcryptjs')
 const passport   = require('passport')
+const api        = require('./routes/api')
+
 require ('./config/auth')(passport)
 const {isLogged} = require('./helpers/isLogged')
 
@@ -20,9 +22,6 @@ require('./models/Inventory')
 require('./models/Mob')
 require('./models/CraftableItem')
 require('./models/Log')
-require('./models/Item')
-require('./models/Shop')
-require('./models/Friendship')
 
 const UserM         = mongoose.model('tbuser')
 const CurrentFight  = mongoose.model('currentFight')
@@ -31,9 +30,6 @@ const Inventory     = mongoose.model('inventory')
 const Mob           = mongoose.model('mob')
 const CraftableItem = mongoose.model('craftableItem')
 const Log           = mongoose.model('log')
-const Item          = mongoose.model('item')
-const Shop          = mongoose.model('shop')
-const Friendship    = mongoose.model('friendship')
 
 //SETUP
 app.use( express.static(path.join(__dirname, 'public')) )
@@ -181,9 +177,6 @@ app.get('/game', isLogged, (req, res) => {
     var userCurrentFight
     var userLog
     var mobEncounter
-    var shop
-    var friends
-    var users
 
     Inventory.findOne({user: res.locals.userSession._id}).then((inventory) => {
         userInventory = inventory
@@ -205,18 +198,6 @@ app.get('/game', isLogged, (req, res) => {
         userLog = log
     })
 
-    Shop.find().lean().then((shopItem) => {
-        shop = JSON.stringify(shopItem)
-    })
-
-    Friendship.find({userA: res.locals.userSession._id}).lean().then((friendlist) => {
-        friends = JSON.stringify(friendlist)
-    })
-
-    UserM.find().select('name -_id').lean().then((user) => {
-        users = JSON.stringify(user)
-    })
-
     CurrentFight.findOne({user: res.locals.userSession._id}).lean().then((currentFight) => {
         userCurrentFight = currentFight
 
@@ -231,9 +212,6 @@ app.get('/game', isLogged, (req, res) => {
                 equip2:         userSword,
                 equip3:         userAxe,
                 log:            userLog,
-                shopItem:       shop,
-                friendlist:     friends,
-                users:          users,
                 currentFight:   userCurrentFight,
                 mob:            mobEncounter
             })
@@ -246,18 +224,7 @@ app.get('/logout', (req, res) => {
     res.redirect('/')
 })
 
-app.post('/add', (req, res) => {
-    res.send(
-        [
-            {
-                "name": "nome"
-            },
-            {
-                "name": "pasta"
-            }
-        ]
-    )
-})
+app.use('/api', api)
 
 //SERVER ON
 const port = 8081
