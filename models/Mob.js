@@ -25,6 +25,10 @@ const MobSchema = new Schema({
     },
     picture: {
         type: String,
+    },
+    level: {
+        type: Number,
+        required: true
     }
 })
 

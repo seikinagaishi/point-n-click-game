@@ -61,18 +61,18 @@
 <footer>
     <div class="slots">
         <div class="tool">
-            {{#if equip1.pickaxe.picture}}
-                <img src="{{equip1.pickaxe.picture}}.png">
+            {{#if equip1}}
+                <img src="{{equip1.picture}}.png" title="{{equip1.name}} | {{equip1.description}} | Damage: {{equip1.damage}}">
             {{/if}}
         </div>
         <div class="tool">
-            {{#if equip2.sword.picture}}
-                <img src="{{equip2.sword.picture}}.png">
+            {{#if equip2}}
+                <img src="{{equip2.picture}}.png" title="{{equip2.name}} | {{equip2.description}} | Damage: {{equip2.damage}}">
             {{/if}}
         </div>
         <div class="tool">
-            {{#if equip3.axe.picture}}
-                <img src="{{equip3.axe.picture}}.png">
+            {{#if equip3}}
+                <img src="{{equip3.picture}}.png" title="{{equip3.name}} | {{equip3.description}} | Damage: {{equip3.damage}}">
             {{/if}}
         </div>
     </div>

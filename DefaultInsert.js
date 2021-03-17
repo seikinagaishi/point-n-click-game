@@ -163,7 +163,8 @@ var mobsThatDropsWood = [
         hp: 15,
         drop: 1,
         dropAmount: 1,
-        picture: 'img/mob/tree'
+        picture: 'img/mob/tree',
+        level: 3
     },
     {
         name: 'Giant Tree',
@@ -171,7 +172,8 @@ var mobsThatDropsWood = [
         hp: 50,
         drop: 1,
         dropAmount: 3,
-        picture: 'img/mob/gtree'
+        picture: 'img/mob/gtree',
+        level: 5
     }
 ]
 
@@ -182,7 +184,8 @@ var mobsThatDropsBone = [
         hp: 10,
         drop: 2,
         dropAmount: 1,
-        picture: 'img/mob/skeleton'
+        picture: 'img/mob/skeleton',
+        level: 1
     },
     {
         name: 'Big Skeleton',
@@ -190,7 +193,8 @@ var mobsThatDropsBone = [
         hp: 150,
         drop: 2,
         dropAmount: 5,
-        picture: 'img/mob/bskeleton'
+        picture: 'img/mob/bskeleton',
+        level: 4
     }
 ]
 
@@ -201,7 +205,8 @@ var mobsThatDropsStone = [
         hp: 10,
         drop: 3,
         dropAmount: 1,
-        picture: 'img/mob/rock'
+        picture: 'img/mob/rock',
+        level: 2
     }
 ]
 
@@ -212,7 +217,8 @@ var mobsThatDropsBronze = [
         hp: 30,
         drop: 4,
         dropAmount: 1,
-        picture: 'img/mob/bronze'
+        picture: 'img/mob/bronze',
+        level: 3
     }
 ]
 
@@ -223,7 +229,8 @@ var mobsThatDropsIron = [
         hp: 75,
         drop: 5,
         dropAmount: 2,
-        picture: 'img/mob/iron'
+        picture: 'img/mob/iron',
+        level: 4
     }
 ]
 
@@ -234,7 +241,8 @@ var mobsThatDropsSilver = [
         hp: 200,
         drop: 6,
         dropAmount: 2,
-        picture: 'img/mob/silver'
+        picture: 'img/mob/silver',
+        level: 5
     }
 ]
 

@@ -12,7 +12,6 @@
 //     console.log(res)
 // })
 
-
 const section = document.querySelector('section')
 // Shop
 const shopBtn = document.querySelector('#shop')
@@ -123,23 +122,18 @@ function friendlist() {
             body: JSON.stringify({
                 name: friendSearch.value
             })
+        }).then((res) => res.json())
+        .then((res) => {
+            if(res.added == true) {
+                addFriendSlot(friendSearch.value, res.friend._id, slots)
+            }
         })
     })
 
     fetch('/api/friendship').then((res) => res.json())
     .then((userFriend) => {
         for(user of userFriend) {
-            let friend = document.createElement('li')
-            friend.setAttribute('class', 'friend')
-            friend.innerText = user.userB.name
-
-            let deleteFriend = document.createElement('span')
-            deleteFriend.setAttribute('class', 'deleteBtn')
-            deleteFriend.setAttribute('id', user.userB._id)
-            deleteFriend.innerText = 'X'
-
-            slots.appendChild(friend)
-            slots.appendChild(deleteFriend)
+            addFriendSlot(user.userB.name, user.userB._id, slots)
         }
     })
 
@@ -217,19 +211,33 @@ function craft() {
 
     fetch('/api/craft').then((res) => res.json())
     .then((craftItems) => {
-        console.log(craftItems)
+
+        for(let i = 0; i < 3; i++) {
+            let item
+            if(i == 0) {
+                item = craftItems[0].pickaxe
+            }
+            if(i == 1) {
+                item = craftItems[0].sword
+            }
+            if(i == 2) {
+                item = craftItems[0].axe
+            }
+
+            let itemSlot = document.createElement('div')
+            itemSlot.setAttribute('class', 'tool')
+            slots.appendChild(itemSlot)
+
+            let itemImg = document.createElement('img')
+            itemImg.setAttribute('src', item.picture + '.png')
+            itemImg.setAttribute('id', item._id)
+            itemImg.setAttribute('title', item.name + ' | ' + item.description + ' | ' + 
+                                  item.material.name + ': ' + item.amount + ' | Wood: ' + item.wood)
+
+            itemSlot.appendChild(itemImg)
+        }
+        
     })
-
-    for(let i = 0; i < 3; i++) {
-        let itemSlot = document.createElement('div')
-        itemSlot.setAttribute('class', 'tool')
-        slots.appendChild(itemSlot)
-
-        let itemImg = document.createElement('img')
-        itemImg.setAttribute('src', 'img/weapon1.png')
-
-        itemSlot.appendChild(itemImg)
-    }
 
     // exit
     let exitBtn = createExitBtn()
@@ -254,29 +262,150 @@ function createExitBtn() {
     return exitBtn
 }
 
+function addFriendSlot(name, id, tabElement) {
+    let friend = document.createElement('li')
+    friend.setAttribute('class', 'friend')
+    friend.innerText = name
+
+    let deleteFriend = document.createElement('span')
+    deleteFriend.setAttribute('class', 'deleteBtn')
+    deleteFriend.setAttribute('id', id)
+    deleteFriend.innerText = 'X'
+
+    deleteFriend.addEventListener('click', () => {
+        fetch('/api/friendship/del', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                friend: id
+            })
+        })
+
+        tabElement.removeChild(friend)
+        tabElement.removeChild(deleteFriend)
+    })
+
+    tabElement.appendChild(friend)
+    tabElement.appendChild(deleteFriend)
+}
+
 // Refresh
 
 function refresh() {
     section.innerHTML = ''
 
-    let pveArea = document.createElement('div')
-    pveArea.setAttribute('id', 'pve')
+    fetch('/api/currentFight').then((res) => res.json())
+    .then((currentFight) => {
+        let fight = currentFight
+        let pveArea = document.createElement('div')
+        pveArea.setAttribute('id', 'pve')
 
-    let mobName = document.createElement('h1')
-    mobName.setAttribute('id', 'mob-name')
-    mobName.innerText = 'Nome do Mob'
+        let mobName = document.createElement('h1')
+        mobName.setAttribute('id', fight.mob._id)
+        mobName.innerText = fight.mob.name
 
-    let mobLife = document.createElement('div')
-    mobLife.setAttribute('id', 'lifebar')
-    mobLife.innerText = '0/100'
+        var mobLife = document.createElement('div')
+        mobLife.setAttribute('id', 'lifebar')
+        
+        let lifebar = (fight.hp / fight.mob.hp) * 100
+        mobLife.innerText = fight.hp + '/' + fight.mob.hp
+        mobLife.style.width = lifebar + '%'
 
-    let mobSprite = document.createElement('img')
-    mobSprite.setAttribute('class', 'mob-pic')
-    mobSprite.setAttribute('src', 'img/mob/tree.png')
+        let mobSprite = document.createElement('img')
+        mobSprite.setAttribute('class', 'mob-pic')
+        mobSprite.setAttribute('src', fight.mob.picture + '.png')
 
-    section.appendChild(pveArea)
+        section.appendChild(pveArea)
 
-    pveArea.appendChild(mobName)
-    pveArea.appendChild(mobLife)
-    pveArea.appendChild(mobSprite)
+        pveArea.appendChild(mobName)
+        pveArea.appendChild(mobLife)
+        pveArea.appendChild(mobSprite)
+
+        document.querySelector('.mob-pic').addEventListener('click', damage)
+    })
+}
+
+document.querySelector('.mob-pic').addEventListener('click', damage)
+
+function damage() {
+    fetch('/api/currentFight').then((res) => res.json())
+    .then((fight) => {
+
+        fetch('/api/equip').then((res) => res.json())
+        .then((equip) => {
+            let tool
+            switch(fight.mob.type) {
+                case 1:
+                    tool = equip.axe
+                    break
+                case 2:
+                    tool = equip.pickaxe
+                    break
+                case 3:
+                    tool = equip.sword
+                    break
+            }
+
+            let remainingHP = fight.hp - tool.damage
+
+            if(remainingHP > 0) {
+                fetch('/api/currentFight/dmgRegister', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        hp: remainingHP
+                    })
+                })
+                refresh()
+                
+            } else {
+                let tools = [equip.axe, equip.pickaxe, equip.sword]
+                let averageItemLevel = 0
+                let index = 0
+                for(item of tools) {
+                    if(item != null) {
+                        index++
+                        averageItemLevel += item.level
+                    }
+                }
+                averageItemLevel /= index
+
+                fetch('/api/log/add', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        killLog: fight.mob.type
+                    })
+                }).then((res) => res.json())
+                .then((log) => {
+                    let logElement = document.querySelector('#mob-type-tab')
+
+                    logElement.innerHTML = "<span class='mob-type'>" + log.tree + " Tree</span><span class='mob-type'>" + log.stone  + " Stone</span><span class='mob-type'>" + log.monster + " Monster</span>"
+                })
+
+                fetch('/api/currentFight/new', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        level: averageItemLevel
+                    })
+                })
+                
+                refresh()
+            }
+        })
+
+    })
 }

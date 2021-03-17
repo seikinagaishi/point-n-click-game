@@ -139,7 +139,8 @@ app.post('/registro', (req, res) => {
                         })
 
                         new Inventory({
-                            user: userCreated._id
+                            user: userCreated._id,
+                            wood: 6
                         }).save().then(() => {
                             console.log('Inventory created...')
                         })
@@ -178,20 +179,18 @@ app.get('/game', isLogged, (req, res) => {
     var userLog
     var mobEncounter
 
-    Inventory.findOne({user: res.locals.userSession._id}).then((inventory) => {
+    Inventory.findOne({user: res.locals.userSession._id}).lean().then((inventory) => {
         userInventory = inventory
     })
 
-    Equipment.findOne({user: res.locals.userSession._id}).populate('pickaxe').lean().then((equip) => {
-        userPickaxe = equip
-    })
-
-    Equipment.findOne({user: res.locals.userSession._id}).populate('sword').lean().then((equip) => {
-        userSword = equip
-    })
-
-    Equipment.findOne({user: res.locals.userSession._id}).populate('axe').lean().then((equip) => {
-        userAxe = equip
+    Equipment.findOne({user: res.locals.userSession._id}).lean()
+    .populate('pickaxe')
+    .populate('sword')
+    .populate('axe')
+    .then((equip) => {
+        userPickaxe = equip.pickaxe
+        userSword   = equip.sword
+        userAxe     = equip.axe
     })
 
     Log.findOne({user: res.locals.userSession._id}).lean().then((log) => {
@@ -219,12 +218,12 @@ app.get('/game', isLogged, (req, res) => {
     })
 })
 
-app.get('/logout', (req, res) => {
+app.get('/logout', isLogged, (req, res) => {
     req.logout()
     res.redirect('/')
 })
 
-app.use('/api', api)
+app.use('/api', isLogged, api)
 
 //SERVER ON
 const port = 8081
