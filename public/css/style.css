@@ -143,6 +143,11 @@ h1 {
     font-size: 16pt;
 }
 
+h3 {
+    color: gray;
+    text-align: center;
+}
+
 #lifebar {
     width: 200px;
     text-align: center;

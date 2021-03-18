@@ -1,17 +1,3 @@
-// var teste = fetch('/api/teste', {
-//     method: 'POST',
-//     headers: {
-//         'Accept': 'application/json',
-//         'Content-Type': 'application/json'
-//     },
-//     body: JSON.stringify({
-//         teste: "teste"
-//     })
-// }).then((res) => res.json())
-// .then((res) => {
-//     console.log(res)
-// })
-
 const section = document.querySelector('section')
 // Shop
 const shopBtn = document.querySelector('#shop')
@@ -40,33 +26,40 @@ function shop() {
 
     fetch('/api/shop').then((res) => res.json())
     .then((items) => {
-        for(item of items) {
-            if(item.type == 1) {
-                let itemSlot = document.createElement('div')
-                itemSlot.setAttribute('class', 'tool')
-                slots.appendChild(itemSlot)
 
-                let itemImg = document.createElement('img')
-                itemImg.setAttribute('src', item.picture + '.png')
-                itemImg.setAttribute('id', item._id)
-                itemImg.setAttribute('title', item.name + ' | ' + item.description + ' | Price: ' + item.price + 'c')
+        fetch('/api/skill').then((res) => res.json())
+        .then((skills) => {
+            let buyItens = 0
+            for(item of items) {
+                if(item.type == 1) {
+                    let itemName = item.name.replace(' Skill', '')
+                    let found = false
 
-                itemSlot.appendChild(itemImg)
+                    for(unlocked of skills) {
+                        if(unlocked.skill.name == itemName) {
+                            found = true
+                            break
+                        }
+                    }
+                    if(!found) {
+                        createItem(item, slots, item.type)
+                        buyItens++
+                    }
+                }
             }
-        }
+
+            if(buyItens == 0) {
+                h3Element = document.createElement('h3')
+                h3Element.innerText = 'Already bought everything'
+                slots.appendChild(h3Element)
+            }
+        })
+
+        
 
         for(item of items) {
             if(item.type == 2) {
-                let itemSlot = document.createElement('div')
-                itemSlot.setAttribute('class', 'tool')
-                sellSlots.appendChild(itemSlot)
-    
-                let itemImg = document.createElement('img')
-                itemImg.setAttribute('src', item.picture + '.png')
-                itemImg.setAttribute('id', item._id)
-                itemImg.setAttribute('title', item.name + ' | ' + item.description + ' | Price: ' + item.price + 'c')
-    
-                itemSlot.appendChild(itemImg)
+                createItem(item, sellSlots, item.type)
             }
         }
     })
@@ -224,17 +217,103 @@ function craft() {
                 item = craftItems[0].axe
             }
 
-            let itemSlot = document.createElement('div')
-            itemSlot.setAttribute('class', 'tool')
-            slots.appendChild(itemSlot)
-
-            let itemImg = document.createElement('img')
-            itemImg.setAttribute('src', item.picture + '.png')
-            itemImg.setAttribute('id', item._id)
-            itemImg.setAttribute('title', item.name + ' | ' + item.description + ' | ' + 
-                                  item.material.name + ': ' + item.amount + ' | Wood: ' + item.wood)
-
-            itemSlot.appendChild(itemImg)
+            if(item != null) {
+                let itemSlot = document.createElement('div')
+                itemSlot.setAttribute('class', 'tool')
+                slots.appendChild(itemSlot)
+    
+                let itemImg = document.createElement('img')
+                itemImg.setAttribute('src', item.picture + '.png')
+                itemImg.setAttribute('id', item._id)
+                itemImg.setAttribute('title', item.name + ' | ' + item.description + ' | ' + 
+                                      item.material.name + ': ' + item.amount + ' | Wood: ' + item.wood)
+                
+                itemImg.addEventListener('click', () => {
+                    fetch('/api/craft/item', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            id: itemImg.id
+                        })
+                    }).then((res) => res.json())
+                    .then((item) => {
+                        
+                        fetch('/api/inventory').then((res) => res.json())
+                        .then((inventory) => {
+                            let materialAmount
+                            switch(item.material.name) {
+                                case 'Bone':
+                                    materialAmount = inventory.bone
+                                    break
+                                case 'Stone':
+                                    materialAmount = inventory.stone
+                                    break
+                                case 'Bronze':
+                                    materialAmount = inventory.bronze
+                                    break
+                                case 'Iron':
+                                    materialAmount = inventory.iron
+                                    break
+                                case 'Silver':
+                                    materialAmount = inventory.silver
+                                    break
+                            }
+    
+                            if(materialAmount >= item.amount && inventory.wood >= item.wood) {
+                                fetch('/api/craft/created', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        material:   item.material.name,
+                                        amount:     item.amount,
+                                        wood:       item.wood,
+                                        tool:       itemImg.id,
+                                        toolType:   item.type
+                                    })
+                                })
+                                
+                                let toolElement
+    
+                                switch(item.type) {
+                                    case 1:
+                                        toolElement = document.querySelector('#axe')
+                                        break
+                                    case 2:
+                                        toolElement = document.querySelector('#pickaxe')
+                                        break
+                                    case 3:
+                                        toolElement = document.querySelector('#sword')
+                                        break
+                                }
+    
+                                toolElement.setAttribute('src', item.picture + '.png')
+                                toolElement.setAttribute('title', item.name + ' | ' + item.description + ' | Damage: ' + item.damage)
+    
+                                woodElement = document.querySelector('#woodAmount')
+                                woodElement.innerText = Number(woodElement.innerText) - item.wood
+    
+                                materialElement = document.querySelector('#' + item.material.name.toLowerCase() + 'Amount')
+                                materialElement.innerText = Number(materialElement.innerText) - item.amount
+                                
+                                setTimeout(function() {craft()}, 500)
+                            }
+    
+    
+                        })
+    
+    
+                    })
+                })
+                
+                itemSlot.appendChild(itemImg)
+            }
+            
         }
         
     })
@@ -290,6 +369,62 @@ function addFriendSlot(name, id, tabElement) {
 
     tabElement.appendChild(friend)
     tabElement.appendChild(deleteFriend)
+}
+
+function createItem(item, slots, type) {
+    let itemSlot = document.createElement('div')
+    itemSlot.setAttribute('class', 'tool')
+    slots.appendChild(itemSlot)
+
+    let itemImg = document.createElement('img')
+    itemImg.setAttribute('src', item.picture + '.png')
+    itemImg.setAttribute('id', item._id)
+    itemImg.setAttribute('title', item.name + ' | ' + item.description + ' | Price: ' + item.price + 'c')
+
+    itemImg.addEventListener('click', () => {
+        let coinElement = document.querySelector('#coinAmount')
+
+        if(type == 1) {
+            if(coinElement.innerText >= item.price) {
+                fetch('/api/shop/buy', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: item._id
+                    })
+                })
+
+                coinElement.innerText = Number(coinElement.innerText) - item.price
+                setTimeout(function() {shop()}, 500)
+            }
+        } 
+        
+        else {
+            let itemElement = document.querySelector('#' + item.name.toLowerCase() + 'Amount')
+            
+
+            if(itemElement.innerText > 0) {
+                fetch('/api/shop/sell', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: item._id
+                    })
+                })
+
+                itemElement.innerText = Number(itemElement.innerText) - 1
+                coinElement.innerText = Number(coinElement.innerText) + item.price
+            }
+        }
+    })
+
+    itemSlot.appendChild(itemImg)
 }
 
 // Refresh
@@ -403,6 +538,23 @@ function damage() {
                     })
                 })
                 
+                fetch('/api/currentFight/loot', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        defeated: fight.mob
+                    })
+                }).then((res) => res.json())
+                .then((drop) => {
+                    let materialElement = document.querySelector('#' + drop.material.toLowerCase() + 'Amount')
+                    materialElement.innerText = Number(materialElement.innerText) + fight.mob.dropAmount
+
+                    let crystalElement = document.querySelector('#crystalAmount')
+                    crystalElement.innerText = Number(crystalElement.innerText) + 1
+                })
                 refresh()
             }
         })

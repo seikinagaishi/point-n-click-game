@@ -14,6 +14,7 @@ require('../models/Equipment')
 require('../models/CurrentFight')
 require('../models/Mob')
 require('../models/Log')
+require('../models/Inventory')
 
 const Item          = mongoose.model('item')
 const Shop          = mongoose.model('shop')
@@ -26,6 +27,7 @@ const Equipment     = mongoose.model('equipment')
 const CurrentFight  = mongoose.model('currentFight')
 const Mob           = mongoose.model('mob')
 const Log           = mongoose.model('log')
+const Inventory     = mongoose.model('inventory')
 
 // ROUTES
 router.get('/shop', (req, res) => {
@@ -34,30 +36,58 @@ router.get('/shop', (req, res) => {
     })
 })
 
+// BUY ITEM
+router.post('/shop/buy', (req, res) => {
+    Shop.findOne({_id: req.body.id}).then((item) => {
+        Inventory.findOne({user: res.locals.userSession._id}).then((inventory) => {
+            let itemName = item.name.replace(" Skill", "")
+            Skill.findOne({name: itemName}).then((skill) => {
+                inventory.gold -= item.price
+                inventory.save()
+
+                new UserSkill({
+                    skill: skill._id,
+                    user: res.locals.userSession._id
+                }).save()
+            })
+        })
+    })
+})
+
+//SELLING CRYSTALS
+router.post('/shop/sell', (req, res) => {
+    Shop.findOne({_id: req.body.id}).then((item) => {
+        Inventory.findOne({user: res.locals.userSession._id}).then((inventory) => {
+            inventory.crystal--
+            inventory.gold += item.price
+
+            inventory.save()
+        })
+    })
+})
+
+//GET FRIENDS
 router.get('/friendship', (req, res) => {
     Friendship.find({userA: res.locals.userSession._id}).populate('userB').lean().then((friends) => {
         res.send(friends)
     })
 })
 
+//GET SKILLS
 router.get('/skill', (req, res) => {
     UserSkill.find({user: res.locals.userSession._id}).populate('skill').lean().then((skill) => {
         res.send(skill)
     })
 })
 
-router.get('/userSkill', (req, res) => {
-    UserSkill.find({user: res.locals.userSession._id}.lean().then((skills) => {
-        res.send(skills)
-    }))
-})
-
+//GET CURRENT FIGHT OF THE SPECIFIED USER
 router.get('/currentFight', (req, res) => {
     CurrentFight.findOne({user: res.locals.userSession._id}).populate('mob').lean().then((mob) => {
         res.send(mob)
     })
 })
 
+//DEAL DAMAGE TO ENEMY
 router.post('/currentFight/dmgRegister', (req, res) => {
     CurrentFight.findOne({user: res.locals.userSession._id}).then((fight) => {
         fight.hp = req.body.hp
@@ -65,8 +95,8 @@ router.post('/currentFight/dmgRegister', (req, res) => {
     })
 })
 
+//CREATE A NEW ENEMY FOR THE USER
 router.post('/currentFight/new', (req, res) => {
-    console.log(req.body)
     Mob.find({
         level: {$lt: req.body.level + 1}
     }).then((mob) => {
@@ -82,6 +112,42 @@ router.post('/currentFight/new', (req, res) => {
     })
 })
 
+//GIVE THE LOOT TO USER'S INVENTORY
+router.post('/currentFight/loot', (req, res) => {
+    Item.findOne({_id: req.body.defeated.drop}).then((item) => {
+        Inventory.findOne({user: res.locals.userSession._id}).then((inventory) => {
+            switch(item.name) {
+                case 'Wood':
+                    inventory.wood += req.body.defeated.dropAmount
+                    break
+                case 'Bone':
+                    inventory.bone += req.body.defeated.dropAmount
+                    break
+                case 'Stone':
+                    inventory.stone += req.body.defeated.dropAmount
+                    break
+                case 'Bronze':
+                    inventory.bronze += req.body.defeated.dropAmount
+                    break
+                case 'Iron':
+                    inventory.iron += req.body.defeated.dropAmount
+                    break
+                case 'Silver':
+                    inventory.silver += req.body.defeated.dropAmount
+                    break
+            }
+
+            inventory.crystal++
+            inventory.save()
+
+            res.send({
+                material: item.name
+            })
+        })
+    })
+})
+
+//REGISTER NEW VALUE TO THE KILL LOG
 router.post('/log/add', (req, res) => {
     Log.findOne({user: res.locals.userSession._id}).then((log) => {
         switch(req.body.killLog) {
@@ -101,6 +167,7 @@ router.post('/log/add', (req, res) => {
     })
 })
 
+//GET EQUIPMENT
 router.get('/equip', (req, res) => {
     Equipment.findOne({user: res.locals.userSession._id})
     .populate('pickaxe')
@@ -111,6 +178,7 @@ router.get('/equip', (req, res) => {
     })
 })
 
+//GET ITEMS TO BE CRAFTED
 router.get('/craft', (req, res) => {
 
     Equipment.findOne({user: res.locals.userSession._id})
@@ -176,6 +244,65 @@ router.get('/craft', (req, res) => {
     
 })
 
+//GET CRAFTABLE ITEM
+router.post('/craft/item', (req, res) => {
+    CraftableItem.findOne({_id: req.body.id}).populate('material').lean().then((item) => {
+        res.send(item)
+    })
+})
+
+//GIVE CRAFTABLE ITEM TO USER
+router.post('/craft/created', (req, res) => {
+    Inventory.findOne({user: res.locals.userSession._id}).then((inventory) => {
+        switch(req.body.material) {
+            case 'Bone':
+                inventory.bone -= req.body.amount
+                break
+            case 'Stone':
+                inventory.stone -= req.body.amount
+                break
+            case 'Bronze':
+                inventory.bronze -= req.body.amount
+                break
+            case 'Iron':
+                inventory.iron -= req.body.amount
+                break
+            case 'Silver':
+                inventory.silver -= req.body.amount
+                break
+        }
+        inventory.wood -= req.body.wood
+
+        inventory.save()    
+    })
+
+    Equipment.findOne({user: res.locals.userSession._id}).then((equip) => {
+        CraftableItem.findOne({_id: req.body.tool}).then((item) => {
+            switch(req.body.toolType) {
+                case 1:
+                    equip.axe = item._id
+                    break
+                case 2:
+                    equip.pickaxe = item._id
+                    break
+                case 3: 
+                    equip.sword = item._id
+                    break
+            }
+
+            equip.save()
+        })
+    })
+})
+
+// GET INVENTORY
+router.get('/inventory', (req, res) => {
+    Inventory.findOne({user: res.locals.userSession._id}).lean().then((inventory) => {
+        res.send(inventory)
+    })
+})
+
+// ADD A FRIEND
 router.post('/friendship/add', (req, res) => {
     //Check if user is trying to add himself
     if(req.body.name != res.locals.userSession.name) {
@@ -227,6 +354,7 @@ router.post('/friendship/add', (req, res) => {
     
 })
 
+// DELETE A FRIEND
 router.post('/friendship/del', (req, res) => {
     Friendship.remove({
         userA: res.locals.userSession._id,

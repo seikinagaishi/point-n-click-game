@@ -140,7 +140,7 @@ app.post('/registro', (req, res) => {
 
                         new Inventory({
                             user: userCreated._id,
-                            wood: 6
+                            wood: 12
                         }).save().then(() => {
                             console.log('Inventory created...')
                         })
