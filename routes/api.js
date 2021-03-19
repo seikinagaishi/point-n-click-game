@@ -138,6 +138,25 @@ router.post('/skill/used', (req, res) => {
     })
 })
 
+router.get('/skill/timeFraction', (req, res) => {
+    Skill.findOne({name: 'Time Fraction'}).then((skill) => {
+        SkillCooldown.findOne({
+            user:  res.locals.userSession._id,
+            skill: skill._id
+        }).then((exist) => {
+            let used
+            if(exist) {
+                used = true
+            } else {
+                used = false
+            }
+            res.send({
+                ongoing: used
+            })
+        })
+    })
+})
+
 //GET CURRENT FIGHT OF THE SPECIFIED USER
 router.get('/currentFight', (req, res) => {
     CurrentFight.findOne({user: res.locals.userSession._id}).populate('mob').lean().then((mob) => {

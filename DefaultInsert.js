@@ -342,8 +342,8 @@ new Shop({
 
 new Skill({
     name: 'Time Fraction',
-    description: 'Double click for 2min',
-    picture: 'img/skill/sk1',
+    description: 'Double click for 6min', //Originally it would be 2 but since I'm using the cooldown as a measure I'll just let 6m
+    picture: 'img/skill/sk1',             //it doesn't make sense but I was just trying things out
     cooldown: 360
 }).save().then((req, res) => {
     console.log('Skill added.')

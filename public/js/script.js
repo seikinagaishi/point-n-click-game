@@ -193,6 +193,7 @@ function skills() {
                         itemImg.setAttribute('src', unlocked.skill.picture + '.png')
                         itemImg.setAttribute('id', unlocked.skill._id)
                         itemImg.setAttribute('title', unlocked.skill.name + ' | ' + unlocked.skill.description + ' | Cooldown: ' + unlocked.skill.cooldown + 's')
+                        itemImg.setAttribute('alt', unlocked.skill.name)
 
                         itemImg.addEventListener('click', () => {
                             fetch('/api/skill/used', {
@@ -206,10 +207,13 @@ function skills() {
                                     cooldown: cooldown
                                 })
                             })
-                            console.log(cooldown)
 
                             slots.removeChild(itemSlot)
-                            setTimeout(function() {skills()}, 500)
+                            setTimeout(function() {refresh()}, 500)
+
+                            if(itemImg.alt == 'Tsubamegaeshi') {
+                                damage(null, true)
+                            }
                         })
 
                         itemSlot.appendChild(itemImg)
@@ -517,101 +521,116 @@ function refresh() {
 
 document.querySelector('.mob-pic').addEventListener('click', damage)
 
-function damage() {
-    fetch('/api/currentFight').then((res) => res.json())
-    .then((fight) => {
-
-        fetch('/api/equip').then((res) => res.json())
-        .then((equip) => {
-            let tool
-            switch(fight.mob.type) {
-                case 1:
-                    tool = equip.axe
-                    break
-                case 2:
-                    tool = equip.pickaxe
-                    break
-                case 3:
-                    tool = equip.sword
-                    break
-            }
-
-            let remainingHP = fight.hp - tool.damage
-
-            if(remainingHP > 0) {
-                fetch('/api/currentFight/dmgRegister', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        hp: remainingHP
-                    })
-                })
-                
-                setTimeout(function() {refresh()}, 500)
-                
-            } else {
-                let tools = [equip.axe, equip.pickaxe, equip.sword]
-                let averageItemLevel = 0
-                let index = 0
-                for(item of tools) {
-                    if(item != null) {
-                        index++
-                        averageItemLevel += item.level
+function damage(req, tsubamegaeshi = false) {
+    fetch('/api/skill/timeFraction').then((res) => res.json())
+    .then((timeFraction) => {
+        fetch('/api/currentFight').then((res) => res.json())
+        .then((fight) => {
+    
+            fetch('/api/equip').then((res) => res.json())
+            .then((equip) => {
+                let tool
+                switch(fight.mob.type) {
+                    case 1:
+                        tool = equip.axe
+                        break
+                    case 2:
+                        tool = equip.pickaxe
+                        break
+                    case 3:
+                        tool = equip.sword
+                        break
+                }
+    
+                let remainingHP = fight.hp
+    
+                if(tsubamegaeshi) {
+                    remainingHP -= (tool.damage * 10)
+                } else {
+                    if(timeFraction.ongoing) {
+                        remainingHP -= (tool.damage * 2)
+                    } else {
+                        remainingHP -= tool.damage
                     }
                 }
-                averageItemLevel /= index
-
-                fetch('/api/log/add', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        killLog: fight.mob.type
+    
+                if(remainingHP > 0) {
+                    fetch('/api/currentFight/dmgRegister', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            hp: remainingHP
+                        })
                     })
-                }).then((res) => res.json())
-                .then((log) => {
-                    let logElement = document.querySelector('#mob-type-tab')
-
-                    logElement.innerHTML = "<span class='mob-type'>" + log.tree + " Tree</span><span class='mob-type'>" + log.stone  + " Stone</span><span class='mob-type'>" + log.monster + " Monster</span>"
-                })
-
-                fetch('/api/currentFight/new', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        level: averageItemLevel
+                    
+                    refresh()
+                    
+                } else {
+                    let tools = [equip.axe, equip.pickaxe, equip.sword]
+                    let averageItemLevel = 0
+                    let index = 0
+                    for(item of tools) {
+                        if(item != null) {
+                            index++
+                            averageItemLevel += item.level
+                        }
+                    }
+                    averageItemLevel /= index
+    
+                    fetch('/api/log/add', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            killLog: fight.mob.type
+                        })
+                    }).then((res) => res.json())
+                    .then((log) => {
+                        let logElement = document.querySelector('#mob-type-tab')
+    
+                        logElement.innerHTML = "<span class='mob-type'>" + log.tree + " Tree</span><span class='mob-type'>" + log.stone  + " Stone</span><span class='mob-type'>" + log.monster + " Monster</span>"
                     })
-                })
+    
+                    fetch('/api/currentFight/new', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            level: averageItemLevel
+                        })
+                    })
+                    
+                    fetch('/api/currentFight/loot', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            defeated: fight.mob
+                        })
+                    }).then((res) => res.json())
+                    .then((drop) => {
+                        let materialElement = document.querySelector('#' + drop.material.toLowerCase() + 'Amount')
+                        materialElement.innerText = Number(materialElement.innerText) + fight.mob.dropAmount
+    
+                        let crystalElement = document.querySelector('#crystalAmount')
+                        crystalElement.innerText = Number(crystalElement.innerText) + 1
+                    })
+    
+                    setTimeout(function() {refresh()}, 500)
+                }
+    
                 
-                fetch('/api/currentFight/loot', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        defeated: fight.mob
-                    })
-                }).then((res) => res.json())
-                .then((drop) => {
-                    let materialElement = document.querySelector('#' + drop.material.toLowerCase() + 'Amount')
-                    materialElement.innerText = Number(materialElement.innerText) + fight.mob.dropAmount
-
-                    let crystalElement = document.querySelector('#crystalAmount')
-                    crystalElement.innerText = Number(crystalElement.innerText) + 1
-                })
-
-                setTimeout(function() {refresh()}, 500)
-            }
+            })
+    
         })
-
     })
 }
