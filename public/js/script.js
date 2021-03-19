@@ -55,13 +55,20 @@ function shop() {
             }
         })
 
-        
-
-        for(item of items) {
-            if(item.type == 2) {
-                createItem(item, sellSlots, item.type)
+        fetch('/api/inventory').then((res) => res.json())
+        .then((inventory) => {
+            if(inventory.crystal > 0) {
+                for(item of items) {
+                    if(item.type == 2) {
+                        createItem(item, sellSlots, item.type)
+                    }
+                }
+            } else {
+                h3Element = document.createElement('h3')
+                h3Element.innerText = "You have nothing to sell"
+                sellSlots.appendChild(h3Element)
             }
-        }
+        })
     })
 
     // exit
@@ -158,20 +165,60 @@ function skills() {
     let slots = document.createElement('div')
     slots.setAttribute('class', 'slots')
 
-    fetch('/api/skill').then((res) => res.json())
-    .then((unlockedSkills) => {
-        for(unlocked of unlockedSkills) {
-            let itemSlot = document.createElement('div')
-            itemSlot.setAttribute('class', 'tool')
-            slots.appendChild(itemSlot)
+    
 
-            let itemImg = document.createElement('img')
-            itemImg.setAttribute('src', unlocked.skill.picture + '.png')
-            itemImg.setAttribute('id', unlocked.skill._id)
-            itemImg.setAttribute('title', unlocked.skill.name + ' | ' + unlocked.skill.description + ' | Cooldown: ' + unlocked.skill.cooldown + 's')
+    fetch('/api/skill/cooldown').then((res) => res.json())
+    .then((skillsOnCooldown) => {
 
-            itemSlot.appendChild(itemImg)
-        }
+        setTimeout(function() {
+            fetch('/api/skill').then((res) => res.json())
+            .then((unlockedSkills) => {
+                for(unlocked of unlockedSkills) {
+                    let found = false
+
+                    for(used of skillsOnCooldown) {
+                        if(used.skill.name == unlocked.skill.name) {
+                            found = true
+                        }
+                    }
+        
+                    if(!found) {
+                        let cooldown = unlocked.skill.cooldown
+
+                        let itemSlot = document.createElement('div')
+                        itemSlot.setAttribute('class', 'tool')
+                        slots.appendChild(itemSlot)
+        
+                        let itemImg = document.createElement('img')
+                        itemImg.setAttribute('src', unlocked.skill.picture + '.png')
+                        itemImg.setAttribute('id', unlocked.skill._id)
+                        itemImg.setAttribute('title', unlocked.skill.name + ' | ' + unlocked.skill.description + ' | Cooldown: ' + unlocked.skill.cooldown + 's')
+
+                        itemImg.addEventListener('click', () => {
+                            fetch('/api/skill/used', {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    id: itemImg.id,
+                                    cooldown: cooldown
+                                })
+                            })
+                            console.log(cooldown)
+
+                            slots.removeChild(itemSlot)
+                            setTimeout(function() {skills()}, 500)
+                        })
+
+                        itemSlot.appendChild(itemImg)
+                    }
+                }
+            })
+        }, 50)
+
+        
     })
 
     // exit
@@ -420,6 +467,11 @@ function createItem(item, slots, type) {
 
                 itemElement.innerText = Number(itemElement.innerText) - 1
                 coinElement.innerText = Number(coinElement.innerText) + item.price
+
+                if( !(itemElement.innerText > 0) ) {
+                    setTimeout(function() {shop()}, 500)
+                }
+                
             }
         }
     })
@@ -497,7 +549,8 @@ function damage() {
                         hp: remainingHP
                     })
                 })
-                refresh()
+                
+                setTimeout(function() {refresh()}, 500)
                 
             } else {
                 let tools = [equip.axe, equip.pickaxe, equip.sword]
@@ -555,7 +608,8 @@ function damage() {
                     let crystalElement = document.querySelector('#crystalAmount')
                     crystalElement.innerText = Number(crystalElement.innerText) + 1
                 })
-                refresh()
+
+                setTimeout(function() {refresh()}, 500)
             }
         })
 

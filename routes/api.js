@@ -15,6 +15,7 @@ require('../models/CurrentFight')
 require('../models/Mob')
 require('../models/Log')
 require('../models/Inventory')
+require('../models/SkillCooldown')
 
 const Item          = mongoose.model('item')
 const Shop          = mongoose.model('shop')
@@ -28,6 +29,7 @@ const CurrentFight  = mongoose.model('currentFight')
 const Mob           = mongoose.model('mob')
 const Log           = mongoose.model('log')
 const Inventory     = mongoose.model('inventory')
+const SkillCooldown = mongoose.model('skillCooldown')
 
 // ROUTES
 router.get('/shop', (req, res) => {
@@ -77,6 +79,62 @@ router.get('/friendship', (req, res) => {
 router.get('/skill', (req, res) => {
     UserSkill.find({user: res.locals.userSession._id}).populate('skill').lean().then((skill) => {
         res.send(skill)
+    })
+})
+
+router.get('/skill/cooldown', (req, res) => {
+    SkillCooldown.find({user: res.locals.userSession._id}).populate('skill').lean().then((skills) => {
+        if(skills) {
+            for(skill of skills) {
+                let used = skill.used
+                let hour = used.getHours()
+                let min = used.getMinutes()
+                let sec = used.getSeconds()
+                sec += skill.cooldown
+
+                if(sec >= 60) {
+                    min += Math.floor(sec/60)
+                    sec = sec - 60 * Math.floor(sec/60)
+                    if(min >= 60) {
+                        hour += Math.floor(min/60)
+                        min = min - 60 * Math.floor(min/60)
+                        while(hour >= 24) {
+                            hour -= 24
+                        }
+                    }
+                }
+
+                let now = new Date()
+                let available = new Date(used.getFullYear(), used.getMonth(), used.getDate(), hour, min, sec)
+                if(available < now) {
+                    SkillCooldown.deleteOne({
+                        user: skill.user,
+                        skill: skill.skill
+                    }).then(() => {
+                        console.log('skill available')
+                    }).catch((err) => {
+                        console.log('error: ' + err)
+                    })
+                }
+            }
+        }
+        res.send(skills)
+    })
+})
+
+router.post('/skill/used', (req, res) => {
+    SkillCooldown.findOne({
+        user:  res.locals.userSession._id,
+        skill: req.body.id
+    }).then((exist) => {
+        if(!exist) {
+            console.log('entering in cooldown')
+            new SkillCooldown({
+                user:     res.locals.userSession._id,
+                skill:    req.body.id,
+                cooldown: req.body.cooldown
+            }).save()
+        }
     })
 })
 
