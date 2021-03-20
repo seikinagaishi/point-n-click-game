@@ -37,20 +37,23 @@ app.use( express.static(path.join(__dirname, 'public')) )
 app.engine('handlebars', handlebars({defaultLayout: 'layout.handlebars'}))
 app.set('view engine', 'handlebars') 
 
-app.use(express.urlencoded())
+app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
 
 //DATABASE
 mongoose.Promise = global.Promise
-mongoose.connect('mongodb://localhost/pointnclick')
+mongoose.connect('mongodb://localhost/pointnclick', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
 
 
 //SESSION
 app.use( session({
     secret: 'seed',
     resave: true,
-    saveUnitialized: true
+    saveUninitialized: true
 }) )
 //app.use( flash() )
 
@@ -221,6 +224,13 @@ app.get('/game', isLogged, (req, res) => {
 app.get('/logout', isLogged, (req, res) => {
     req.logout()
     res.redirect('/')
+})
+
+app.post('/teste', (req, res) => {
+    console.log('hey')
+    res.send({
+        teste: req.body.teste
+    })
 })
 
 app.use('/api', isLogged, api)

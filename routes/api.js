@@ -88,9 +88,9 @@ router.get('/skill/cooldown', (req, res) => {
             for(skill of skills) {
                 let used = skill.used
                 let hour = used.getHours()
-                let min = used.getMinutes()
-                let sec = used.getSeconds()
-                sec += skill.cooldown
+                let min  = used.getMinutes()
+                let sec  = used.getSeconds()
+                sec     += skill.cooldown
 
                 if(sec >= 60) {
                     min += Math.floor(sec/60)
@@ -170,6 +170,7 @@ router.post('/currentFight/dmgRegister', (req, res) => {
         fight.hp = req.body.hp
         fight.save()
     })
+        
 })
 
 //CREATE A NEW ENEMY FOR THE USER
@@ -433,7 +434,7 @@ router.post('/friendship/add', (req, res) => {
 
 // DELETE A FRIEND
 router.post('/friendship/del', (req, res) => {
-    Friendship.remove({
+    Friendship.deleteOne({
         userA: res.locals.userSession._id,
         userB: req.body.friend
     }).then(() => {
